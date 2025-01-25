@@ -360,7 +360,7 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
       currentData.push(newData);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(currentData));
       
-      console.log('localStorage 저장 후:', JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY))); // 디버깅
+      console.log('localStorage 저장 후:', JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY))); // 디버깅용 로그
       
       setFormData(initialFormState);
       navigate('/data-view');
@@ -718,94 +718,103 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
       return null;
     }
   };
-  // 말초혈관 수축도(PVC) 계산 함수
-  const calculatePVC = (data) => {
-    try {
-      // 입력값 가져오기 및 숫자로 변환
-      const ba = Math.abs(parseFloat(data.ba_ratio) || 0);  // |b/a|
-      const da = Math.abs(parseFloat(data.da_ratio) || 0);  // |d/a|
-      const ae = Math.abs(parseFloat(data.ae_ms) || 0);     // (a-e)
-      const ca = Math.abs(parseFloat(data.ca_ratio) || 0);  // |c/a|
+  // 맥파 데이터 계산 함수들 수정
+  const calculatePVC = (formData) => {
+    // 입력값 (a는 직접 계산)
+    const ab = parseFloat(formData.ab_ms);    // a-b = 88
+    const ac = parseFloat(formData.ac_ms);    // a-c = 157
+    const ad = parseFloat(formData.ad_ms);    // a-d = 205
+    const ae = parseFloat(formData.ae_ms);    // a-e = 278
+    const b_a = parseFloat(formData.ba_ratio); // b/a = -0.77
+    const c_a = parseFloat(formData.ca_ratio); // c/a = -0.39
+    const d_a = parseFloat(formData.da_ratio); // d/a = -0.25
+    const e_a = parseFloat(formData.ea_ratio); // e/a = 0.18
 
-      // 새로운 공식 적용: PVC = 0.2⋅|b/a| + 0.15⋅|d/a| + 0.1⋅(a-e) + 0.05⋅|c/a|
-      const term1 = 0.2 * ba;     // 0.2⋅|b/a|
-      const term2 = 0.15 * da;    // 0.15⋅|d/a|
-      const term3 = 0.1 * ae;     // 0.1⋅(a-e)
-      const term4 = 0.05 * ca;    // 0.05⋅|c/a|
+    if ([ab, ac, ad, ae, b_a, c_a, d_a, e_a].some(isNaN)) {
+      return 'NaN';
+    }
 
-      const pvc = term1 + term2 + term3 + term4;
+    // PVC = 0.2⋅ABS(b/a) + 0.15⋅ABS(d/a) + 0.1⋅(a-e) + 0.05⋅ABS(c/a)
+    const result = (
+      0.2 * Math.abs(b_a) +    // 0.2 * 0.77
+      0.15 * Math.abs(d_a) +   // 0.15 * 0.25
+      0.1 * ae +               // 0.1 * 278
+      0.05 * Math.abs(c_a)     // 0.05 * 0.39
+    );
 
-      // 계산 과정 로깅
-      console.log('PVC 계산 과정:', {
-        '입력값': { ba, da, ae, ca },
-        '계산항': { term1, term2, term3, term4 },
-        '최종결과': pvc
-      });
+    return result.toFixed(2);
+  };
 
-      return pvc.toFixed(2);
-    } catch (error) {
-      console.error('PVC 계산 오류:', error);
-      return '0.00';
+  const calculateBV = (formData) => {
+    const ab = parseFloat(formData.ab_ms);    // a-b = 88
+    const ac = parseFloat(formData.ac_ms);    // a-c = 157
+    const ad = parseFloat(formData.ad_ms);    // a-d = 205
+    const ae = parseFloat(formData.ae_ms);    // a-e = 278
+    const b_a = parseFloat(formData.ba_ratio); // b/a = -0.77
+    const c_a = parseFloat(formData.ca_ratio); // c/a = -0.39
+    const d_a = parseFloat(formData.da_ratio); // d/a = -0.25
+    const e_a = parseFloat(formData.ea_ratio); // e/a = 0.18
+
+    if ([ab, ac, ad, ae, b_a, c_a, d_a, e_a].some(isNaN)) {
+      return 'NaN';
+    }
+
+    // BV = 0.15⋅ABS(c/a) + 0.1⋅((a-d)-(a-c)) + 0.1⋅(a-e)/(a-b) + 0.05⋅(a-b)
+    const result = (
+      0.15 * Math.abs(c_a) +   // 0.15 * 0.39
+      0.1 * (ad - ac) +        // 0.1 * (205 - 157)
+      0.1 * (ae / ab) +        // 0.1 * (278 / 88)
+      0.05 * ab                // 0.05 * 88
+    );
+
+    return result.toFixed(2);
+  };
+
+  const calculateSV = (formData) => {
+    const ab = parseFloat(formData.ab_ms);    // a-b = 88
+    const ae = parseFloat(formData.ae_ms);    // a-e = 278
+    const b_a = parseFloat(formData.ba_ratio); // b/a = -0.77
+    const d_a = parseFloat(formData.da_ratio); // d/a = -0.25
+
+    if ([ab, ae, b_a, d_a].some(isNaN)) {
+      return 'NaN';
+    }
+
+    // SV = 0.05⋅ABS(d/a) + 0.03⋅(a-e) + 0.02⋅ABS(b/a)
+    const result = (
+      0.05 * Math.abs(d_a) +   // 0.05 * 0.25
+      0.03 * ae +              // 0.03 * 278
+      0.02 * Math.abs(b_a)     // 0.02 * 0.77
+    );
+
+    return result.toFixed(2);
+  };
+
+  // 맥파 데이터가 변경될 때 호출되는 함수
+  const updatePulseCalculations = () => {
+    if (formData.ab_ms && formData.ac_ms && formData.ad_ms && formData.ae_ms) {
+      const a = parseFloat(formData.ab_ms);
+      const b = parseFloat(formData.ba_ratio);
+      const c = parseFloat(formData.ca_ratio);
+      const d = parseFloat(formData.da_ratio);
+      const e = parseFloat(formData.ea_ratio);
+
+      if (!isNaN(a) && !isNaN(b) && !isNaN(c) && !isNaN(d) && !isNaN(e)) {
+        setFormData(prev => ({
+          ...prev,
+          pvc: calculatePVC(formData),
+          bv: calculateBV(formData),
+          sv: calculateSV(formData)
+        }));
+      }
     }
   };
-  // 혈액 점도(BV) 계산 함수
-  const calculateBV = (data) => {
-    try {
-      // 입력값 가져오기
-      const ca = Math.abs(parseFloat(data.ca_ratio) || 0);  // |c/a|
-      const ad = parseFloat(data.ad_ms) || 0;  // (a-d)
-      const ac = parseFloat(data.ac_ms) || 0;  // (a-c)
-      const ae = parseFloat(data.ae_ms) || 0;  // (a-e)
-      const ab = parseFloat(data.ab_ms) || 0;  // (a-b)
 
-      // 새로운 공식 적용: BV = 0.15⋅|c/a| + 0.1⋅((a-d)-(a-c)) + 0.1⋅(a-e)/(a-b) + 0.05⋅(a-b)
-      const term1 = 0.15 * ca;                    // 0.15⋅|c/a|
-      const term2 = 0.1 * (ad - ac);             // 0.1⋅((a-d)-(a-c))
-      const term3 = ab !== 0 ? 0.1 * (ae/ab) : 0; // 0.1⋅(a-e)/(a-b)
-      const term4 = 0.05 * ab;                    // 0.05⋅(a-b)
+  // useEffect를 사용하여 맥파 데이터가 변경될 때마다 계산 실행
+  useEffect(() => {
+    updatePulseCalculations();
+  }, [formData.ab_ms, formData.ba_ratio, formData.ca_ratio, formData.da_ratio, formData.ea_ratio]);
 
-      const bv = term1 + term2 + term3 + term4;
-
-      // 계산 과정 로깅
-      console.log('BV 계산 과정:', {
-        '입력값': { ca, ad, ac, ae, ab },
-        '계산항': { term1, term2, term3, term4 },
-        '최종결과': bv
-      });
-
-      return bv.toFixed(2);
-    } catch (error) {
-      console.error('BV 계산 오류:', error);
-      return '0.00';
-    }
-  };
-  const calculateSV = (data) => {
-    try {
-      // 입력값 가져오기
-      const da = Math.abs(parseFloat(data.da_ratio) || 0);  // |d/a|
-      const ae = parseFloat(data.ae_ms) || 0;               // (a-e)
-      const ba = Math.abs(parseFloat(data.ba_ratio) || 0);  // |b/a|
-
-      // 새로운 공식 적용: SV = 0.05⋅|d/a| + 0.03⋅(a-e) + 0.02⋅|b/a|
-      const term1 = 0.05 * da;    // 0.05⋅|d/a|
-      const term2 = 0.03 * ae;    // 0.03⋅(a-e)
-      const term3 = 0.02 * ba;    // 0.02⋅|b/a|
-
-      const sv = term1 + term2 + term3;
-
-      // 계산 과정 로깅
-      console.log('SV 계산 과정:', {
-        '입력값': { da, ae, ba },
-        '계산항': { term1, term2, term3 },
-        '최종결과': sv
-      });
-
-      return sv.toFixed(2);
-    } catch (error) {
-      console.error('SV 계산 오류:', error);
-      return '0.00';
-    }
-  };
   // resetForm 함수 추가
   const resetForm = () => {
     setFormData({
@@ -1106,9 +1115,11 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
               style={getInputStyle('workIntensity')}
             >
               <option value="">선택하세요</option>
-              <option value="low">낮음</option>
-              <option value="medium">보통</option>
-              <option value="high">높음</option>
+              <option value="매우 높음">매우 높음</option>
+              <option value="높음">높음</option>
+              <option value="보통">보통</option>
+              <option value="낮음">낮음</option>
+              <option value="매우 낮음">매우 낮음</option>
             </select>
             {error && <span className="error-message">{error}</span>}
           </div>
