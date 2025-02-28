@@ -1,0 +1,426 @@
+.data-view-container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.controls-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.search-box input:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  outline: none;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.data-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background: #f8fafc;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+.data-table tr:hover {
+  background: #f8fafc;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-button {
+  background: #3498db;
+  color: white;
+}
+
+.view-button:hover {
+  background: #2980b9;
+}
+
+.edit-button {
+  background: #2ecc71;
+  color: white;
+}
+
+.edit-button:hover {
+  background: #27ae60;
+}
+
+.delete-button {
+  background: #e74c3c;
+  color: white;
+}
+
+.delete-button:hover {
+  background: #c0392b;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination button:hover {
+  background: #f8fafc;
+}
+
+.pagination button.active {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem;
+  color: #94a3b8;
+  font-size: 1.1rem;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.status-normal {
+  background: #2ecc71;
+}
+
+.status-warning {
+  background: #f1c40f;
+}
+
+.status-danger {
+  background: #e74c3c;
+}
+
+@media (max-width: 1024px) {
+  .controls-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .data-table {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .data-view-container {
+    padding: 0 1rem;
+    margin: 1rem auto;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-button {
+    width: 100%;
+  }
+}
+
+.pc-data-view-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.add-button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-button:hover {
+  background-color: #0056b3;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #ddd;
+}
+
+.data-table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.data-table tr:hover {
+  background-color: #f0f0f0;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2em;
+  color: #666;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 테이블 열 너비 조정 - 데이터 특성 반영 */
+.col-checkbox {
+  width: 30px;
+  min-width: 30px;
+}
+
+.col-date {
+  width: 150px;
+  min-width: 150px;
+}
+
+.col-name {
+  width: 100px;
+  min-width: 100px;
+}
+
+.col-resident {
+  width: 140px;
+  min-width: 140px;
+}
+
+.col-gender {
+  width: 60px;
+  min-width: 60px;
+}
+
+/* 텍스트 데이터 열 - 중간 길이 */
+.col-personality {
+  width: 120px;
+  min-width: 120px;
+}
+
+.col-stress {
+  width: 120px;
+  min-width: 120px;
+}
+
+.col-workIntensity {
+  width: 100px;
+  min-width: 100px;
+}
+
+/* 숫자 데이터 열 - 좁은 너비 */
+.col-number {
+  width: 90px;
+  min-width: 90px;
+  text-align: right;
+}
+
+/* 비율 데이터 열 - 매우 좁은 너비 */
+.col-ratio {
+  width: 80px;
+  min-width: 80px;
+  text-align: right;
+}
+
+/* 긴 텍스트 데이터 열 */
+.col-symptoms {
+  width: 300px;
+  min-width: 300px;
+}
+
+.col-medications {
+  width: 250px;
+  min-width: 250px;
+}
+
+.col-preferences {
+  width: 200px;
+  min-width: 200px;
+}
+
+.col-memo {
+  width: 200px;
+  min-width: 200px;
+}
+
+/* 테이블 셀 공통 정렬 스타일 */
+td, th {
+  padding: 8px 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center; /* 모든 셀 가운데 정렬 */
+  vertical-align: middle; /* 수직 가운데 정렬 */
+}
+
+/* 체크박스 셀은 예외 처리 */
+td.col-checkbox,
+th.col-checkbox {
+  text-align: center;
+  padding: 8px 4px;
+}
+
+/* 긴 텍스트 처리 (증상, 복용약물, 기호식품, 메모) */
+td[data-type="text-long"] {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+  max-height: 2.8em;
+  text-align: center; /* 가운데 정렬 유지 */
+}
+
+/* 숫자 데이터도 가운데 정렬로 변경 */
+td[data-type="number"],
+th[data-type="number"] {
+  text-align: center;
+}
+
+/* 테이블 헤더 스타일 */
+thead th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 1;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+  text-align: center;
+}
+
+/* 홀수/짝수 행 구분 유지 */
+tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+/* 행 호버 효과 유지 */
+tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+/* 테이블 전체 스타일 보완 */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  background: white;
+}
+
+/* 셀 테두리 스타일 */
+td, th {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* 마지막 행의 셀 테두리 제거 */
+tbody tr:last-child td {
+  border-bottom: none;
+}

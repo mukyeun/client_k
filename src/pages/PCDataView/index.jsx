@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import LoadingSpinner from '../LoadingSpinner';
+import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import EditModal from './EditModal';
 import { getAllUserInfo, deleteUserInfo, saveUserInfo, initializeLocalStorage } from '../../api/userInfo';
 import './UserDataTable.css';
-import ErrorMessage from '../common/ErrorMessage';
+import ErrorMessage from '../../components/common/ErrorMessage';
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils';
 import { read, utils } from 'xlsx';
 import * as ExcelJS from 'exceljs';
+import { FaSearch, FaFilter, FaFileExcel, FaEdit, FaTrash } from 'react-icons/fa';
+import './PCDataView.css';
+
 // localStorage 키 상수 정의
 const LOCAL_STORAGE_KEY = 'ubioUserData';  // UserInfoForm과 동일한 키 사용
 const UserDataTable = () => {
@@ -15,8 +19,12 @@ const UserDataTable = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
   const [checkedIds, setCheckedIds] = useState([]);
+  const [selectedData, setSelectedData] = useState(null);
+  const navigate = useNavigate();
   
   // 정렬, 필터링, 페이지네이션 상태
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
@@ -262,97 +270,92 @@ const UserDataTable = () => {
       }
     });
   }, [getFilteredData]);
-  const handleExport = async () => {
-    try {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('User Data');
+  const handleExport = () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('데이터');
 
-      // 헤더 설정
-      worksheet.columns = [
-        { header: '이름', key: 'name', width: 15 },
-        { header: '생성일', key: 'createdAt', width: 20 },
-        { header: '성별', key: 'gender', width: 10 },
-        { header: '성격', key: 'personality', width: 15 },
-        { header: '스트레스', key: 'stress', width: 15 },
-        { header: '노동강도', key: 'workIntensity', width: 15 },
-        { header: '신장(cm)', key: 'height', width: 10 },
-        { header: '체중(kg)', key: 'weight', width: 10 },
-        { header: 'BMI', key: 'bmi', width: 10 },
-        { header: '맥박', key: 'pulse', width: 10 },
-        { header: '수축기혈압', key: 'systolicBP', width: 15 },
-        { header: '이완기혈압', key: 'diastolicBP', width: 15 },
-        { header: 'a-b(ms)', key: 'ab_ms', width: 10 },
-        { header: 'a-c(ms)', key: 'ac_ms', width: 10 },
-        { header: 'a-d(ms)', key: 'ad_ms', width: 10 },
-        { header: 'a-e(ms)', key: 'ae_ms', width: 10 },
-        { header: 'b/a', key: 'ba_ratio', width: 10 },
-        { header: 'c/a', key: 'ca_ratio', width: 10 },
-        { header: 'd/a', key: 'da_ratio', width: 10 },
-        { header: 'e/a', key: 'ea_ratio', width: 10 },
-        { header: 'PVC', key: 'pvc', width: 10 },
-        { header: 'BV', key: 'bv', width: 10 },
-        { header: 'SV', key: 'sv', width: 10 },
-        { header: 'HR', key: 'hr', width: 10 },
-        { header: '증상', key: 'symptoms', width: 30 },
-        { header: '복용약물', key: 'medication', width: 20 },
-        { header: '기호식품', key: 'preference', width: 15 },
-        { header: '메모', key: 'memo', width: 30 }
-      ];
+    // 헤더 설정
+    worksheet.columns = [
+      { header: '측정일시', key: 'createdAt', width: 20 },
+      { header: '이름', key: 'name', width: 15 },
+      { header: '주민번호', key: 'residentNumber', width: 15 },
+      { header: '성별', key: 'gender', width: 10 },
+      { header: '성격', key: 'personality', width: 15 },
+      { header: '스트레스', key: 'stress', width: 15 },
+      { header: '노동강도', key: 'workIntensity', width: 15 },
+      { header: '신장(cm)', key: 'height', width: 12 },
+      { header: '체중(kg)', key: 'weight', width: 12 },
+      { header: 'BMI', key: 'bmi', width: 10 },
+      { header: '맥박', key: 'pulse', width: 10 },
+      { header: '수축기혈압', key: 'systolicBP', width: 12 },
+      { header: '이완기혈압', key: 'diastolicBP', width: 12 },
+      { header: 'a-b(ms)', key: 'ab_ms', width: 12 },
+      { header: 'a-c(ms)', key: 'ac_ms', width: 12 },
+      { header: 'a-d(ms)', key: 'ad_ms', width: 12 },
+      { header: 'a-e(ms)', key: 'ae_ms', width: 12 },
+      { header: 'b/a', key: 'ba_ratio', width: 10 },
+      { header: 'c/a', key: 'ca_ratio', width: 10 },
+      { header: 'd/a', key: 'da_ratio', width: 10 },
+      { header: 'e/a', key: 'ea_ratio', width: 10 },
+      { header: 'PVC', key: 'pvc', width: 10 },
+      { header: 'BV', key: 'bv', width: 10 },
+      { header: 'SV', key: 'sv', width: 10 },
+      { header: 'HR', key: 'pulse', width: 10 }, // HR 항목 추가 (pulse 값 사용)
+      { header: '증상', key: 'selectedSymptoms', width: 30 },
+      { header: '복용약물', key: 'selectedMedications', width: 30 },
+      { header: '기호식품', key: 'selectedPreferences', width: 30 },
+      { header: '메모', key: 'memo', width: 30 }
+    ];
 
-      // 데이터 추가
-      const rows = userData.map(user => ({
-        name: user.name || '',
-        email: user.email || '',
-        createdAt: user.createdAt ? new Date(user.createdAt).toLocaleString() : '',
-        gender: user.gender || '',
-        personality: user.personality || '',
-        stress: user.stress || '',
-        workIntensity: user.workIntensity || '',
-        height: user.height || '',
-        weight: user.weight || '',
-        bmi: user.bmi || '',
-        pulse: user.pulse || '',
-        systolicBP: user.systolicBP || '',
-        diastolicBP: user.diastolicBP || '',
-        ab_ms: user.ab_ms || '',
-        ac_ms: user.ac_ms || '',
-        ad_ms: user.ad_ms || '',
-        ae_ms: user.ae_ms || '',
-        ba_ratio: user.ba_ratio || '',
-        ca_ratio: user.ca_ratio || '',
-        da_ratio: user.da_ratio || '',
-        ea_ratio: user.ea_ratio || '',
-        pvc: user.pvc || '',
-        bv: user.bv || '',
-        sv: user.sv || '',
-        hr: user.hr || '',
-        symptoms: Array.isArray(user.symptoms) ? user.symptoms.join(', ') : user.symptoms || '',
-        medication: user.medication || '',
-        preference: user.preference || '',
-        memo: user.memo || ''
-      }));
+    // 데이터 추가
+    const rows = currentPageData.map(user => ({
+      createdAt: formatDate(user.createdAt),
+      name: user.name,
+      residentNumber: user.residentNumber,
+      gender: user.gender,
+      personality: user.personality,
+      stress: user.stress,
+      workIntensity: user.workIntensity,
+      height: user.height,
+      weight: user.weight,
+      bmi: calculateBMI(user.height, user.weight),
+      pulse: user.pulse,
+      systolicBP: user.systolicBP,
+      diastolicBP: user.diastolicBP,
+      ab_ms: user.ab_ms,
+      ac_ms: user.ac_ms,
+      ad_ms: user.ad_ms,
+      ae_ms: user.ae_ms,
+      ba_ratio: user.ba_ratio,
+      ca_ratio: user.ca_ratio,
+      da_ratio: user.da_ratio,
+      ea_ratio: user.ea_ratio,
+      pvc: user.pvc,
+      bv: user.bv,
+      sv: user.sv,
+      pulse: user.pulse, // HR 값으로 pulse 사용
+      selectedSymptoms: Array.isArray(user.selectedSymptoms) ? user.selectedSymptoms.join(', ') : user.selectedSymptoms,
+      selectedMedications: Array.isArray(user.selectedMedications) ? user.selectedMedications.join(', ') : user.selectedMedications,
+      selectedPreferences: Array.isArray(user.selectedPreferences) ? user.selectedPreferences.join(', ') : user.selectedPreferences,
+      memo: user.memo
+    }));
 
-      worksheet.addRows(rows);
+    worksheet.addRows(rows);
 
-      // 스타일 적용
-      worksheet.getRow(1).font = { bold: true };
-      worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    // 스타일 적용
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-      // 파일 저장
-      workbook.xlsx.writeBuffer().then(buffer => {
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `user_data_${new Date().toISOString().split('T')[0]}.xlsx`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      });
-
-    } catch (error) {
-      console.error('엑셀 내보내기 오류:', error);
-      alert('엑셀 파일 생성 중 오류가 발생했습니다.');
-    }
+    // 엑셀 파일 다운로드
+    workbook.xlsx.writeBuffer().then(buffer => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `데이터_${formatDate(new Date())}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
   };
   const handleBackup = () => {
     const dataToBackup = {
@@ -402,10 +405,14 @@ const UserDataTable = () => {
       }));
     }
   }, [sortedData.length]);
-  const handleEdit = (user) => {
+  const handleView = useCallback((user) => {
+    setViewingUser(user);
+    setIsViewModalOpen(true);
+  }, []);
+  const handleEdit = useCallback((user) => {
     setEditingUser(user);
     setIsEditModalOpen(true);
-  };
+  }, []);
   const handleResetFilters = () => {
     setFilters({
       startDate: '',
@@ -414,23 +421,17 @@ const UserDataTable = () => {
       name: ''
     });
   };
-  const handleDelete = async () => {
-    if (checkedIds.length === 0) {
-      alert('삭제할 항목을 선택해주세요.');
-      return;
-    }
-    if (window.confirm(`선택한 ${checkedIds.length}개 항목을 삭제하시겠습니까?`)) {
+  const handleDelete = useCallback(async (userId) => {
+    if (window.confirm('정말로 이 데이터를 삭제하시겠습니까?')) {
       try {
-        await Promise.all(checkedIds.map(id => deleteUserInfo(id)));
-        setCheckedIds([]);
-        await loadUserData();
-        alert('삭제가 완료되었습니다.');
+        // 삭제 로직 구현
+        // 데이터 새로고침
+        loadUserData();
       } catch (error) {
-        console.error('Delete error:', error);
-        alert('삭제 중 오류가 발생했습니다.');
+        console.error('삭제 중 오류 발생:', error);
       }
     }
-  };
+  }, [loadUserData]);
   const renderRow = useCallback((user, index) => (
     <tr key={user._id}>
       <td className="checkbox-cell">
@@ -468,9 +469,9 @@ const UserDataTable = () => {
       <td>{user.bv}</td>
       <td>{user.sv}</td>
       <td>{user.hr}</td>
-      <td>{Array.isArray(user.symptoms) ? user.symptoms.join(', ') : user.symptoms}</td>
-      <td>{user.medication}</td>
-      <td>{user.preference}</td>
+      <td>{Array.isArray(user.selectedSymptoms) ? user.selectedSymptoms.join(', ') : user.selectedSymptoms}</td>
+      <td>{Array.isArray(user.selectedMedications) ? user.selectedMedications.join(', ') : user.selectedMedications}</td>
+      <td>{Array.isArray(user.selectedPreferences) ? user.selectedPreferences.join(', ') : user.selectedPreferences}</td>
       <td>{user.memo}</td>
       <td className="action-cell">
         <button 
@@ -628,6 +629,80 @@ const UserDataTable = () => {
       handleExcelUpload(file);
     }
   }, [handleExcelUpload]);
+  // 전체 페이지 수 계산
+  const totalPages = useMemo(() => {
+    const filteredDataLength = getFilteredData().length;
+    return Math.ceil(filteredDataLength / itemsPerPage);
+  }, [getFilteredData, itemsPerPage]);
+
+  // 현재 페이지 데이터
+  const currentPageData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedData.slice(startIndex, startIndex + itemsPerPage);
+  }, [currentPage, itemsPerPage, sortedData]);
+
+  // 페이지 변경 핸들러
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(Math.min(Math.max(1, page), totalPages));
+  }, [totalPages]);
+
+  // 표시할 페이지 번호 계산
+  const pageNumbers = useMemo(() => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }, [currentPage, totalPages]);
+
+  // 선택 삭제 버튼 표시 여부
+  const showDeleteButton = useMemo(() => checkedIds.length > 0, [checkedIds]);
+
+  // 선택된 항목 삭제 핸들러
+  const handleDeleteSelected = useCallback(async () => {
+    if (!checkedIds.length) return;
+
+    if (window.confirm(`선택한 ${checkedIds.length}개의 항목을 삭제하시겠습니까?`)) {
+      try {
+        // localStorage에서 데이터 가져오기
+        const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        let allData = savedData ? JSON.parse(savedData) : [];
+
+        // 선택된 항목 제외한 데이터만 필터링
+        const filteredData = allData.filter(item => !checkedIds.includes(item._id));
+
+        // localStorage 업데이트
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filteredData));
+
+        // 상태 업데이트
+        setUserData(filteredData);
+        setCheckedIds([]); // 체크박스 초기화
+
+        alert('선택한 항목이 삭제되었습니다.');
+      } catch (error) {
+        console.error('삭제 중 오류 발생:', error);
+        alert('삭제 중 오류가 발생했습니다.');
+      }
+    }
+  }, [checkedIds]);
+
+  // BMI 계산 함수 추가
+  const calculateBMI = (height, weight) => {
+    if (!height || !weight) return '';
+    const heightInMeters = height / 100;
+    const bmi = weight / (heightInMeters * heightInMeters);
+    return bmi.toFixed(1);
+  };
+
   // 데이터 로딩 상태 표시
   if (isLoading) {
     return <div>데이터를 불러오는 중...</div>;
@@ -637,229 +712,210 @@ const UserDataTable = () => {
     return <div>Error: {error}</div>;
   }
   return (
-    <div className="data-page-container">
-      <div className="data-header">
-        <h2>로컬 저장 데이터 조회</h2>
-        <div className="header-buttons">
-          {checkedIds.length > 0 && (
-            <button 
-              onClick={handleDelete}
-              className="delete-button"
-            >
-              선택한 항목 삭제
-            </button>
-          )}
-          <button onClick={loadUserData} className="refresh-button">
-            새로고침
-          </button>
-          <div className="export-buttons">
-            <button onClick={handleExport} className="export-button excel">
-              Excel 내보내기
-            </button>
-            <button onClick={() => handleExport('csv')} className="export-button csv">
-              CSV 내보내기
-            </button>
-          </div>
-          <div className="backup-controls">
-            <button onClick={handleBackup} className="backup-button">
-              백업
-            </button>
-            <label className="restore-button">
-              복원
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleRestore}
-                style={{ display: 'none' }}
-              />
-            </label>
-          </div>
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            onChange={handleFileChange}
-            style={{ display: 'none' }}
-            id="excel-upload"
+    <div className="data-view-container">
+      {/* 상단 컨트롤 섹션 */}
+      <div className="controls-section">
+        <div className="search-box">
+          <FaSearch className="search-icon" />
+          <input 
+            type="text" 
+            placeholder="이름 또는 주민번호로 검색..."
+            value={filters.name || filters.residentNumberPrefix || ''}
+            onChange={(e) => handleFilterChange('name', e.target.value)}
           />
-          <label htmlFor="excel-upload" className="excel-button">
-            엑셀 업로드
-          </label>
         </div>
-      </div>
-      <div className="table-filters">
-        <div className="filter-group">
-          <label>등록일자</label>
+        
+        {/* 선택 삭제 버튼 */}
+        {showDeleteButton && (
+          <button 
+            className="delete-selected-button"
+            onClick={handleDeleteSelected}
+          >
+            <FaTrash /> 선택 항목 삭제 ({checkedIds.length})
+          </button>
+        )}
+
+        <div className="date-filter">
           <input 
             type="date" 
             value={filters.startDate}
             onChange={(e) => handleFilterChange('startDate', e.target.value)}
           />
-          <span>~</span>
+          <span className="date-separator">~</span>
           <input 
             type="date" 
             value={filters.endDate}
             onChange={(e) => handleFilterChange('endDate', e.target.value)}
           />
         </div>
+
+        <button className="filter-reset" onClick={handleResetFilters}>
+          <FaFilter /> 필터 초기화
+        </button>
         
-        <div className="filter-group">
-          <label>이름</label>
-          <input 
-            type="text" 
-            placeholder="이름으로 검색"
-            value={filters.name}
-            onChange={(e) => handleFilterChange('name', e.target.value)}
-          />
-        </div>
-        
-        <div className="filter-group">
-          <label>주민등록번호</label>
-          <input 
-            type="text" 
-            placeholder="주민등록번호 자리"
-            value={filters.residentNumberPrefix}
-            onChange={(e) => handleFilterChange('residentNumberPrefix', e.target.value)}
-          />
-        </div>
-        <button 
-          className="reset-filter-button"
-          onClick={handleResetFilters}
-        >
-          필터 초기화
+        <button className="export-excel" onClick={handleExport}>
+          <FaFileExcel /> Excel 내보내기
         </button>
       </div>
-      <div 
-        className="table-wrapper" 
-        onScroll={handleTableScroll}
-        role="region" 
-        aria-label="환자 데이터 테블"
-      >
-        <div className="table-controls">
-          <div className="items-per-page">
-            <select
-              value={itemsPerPage}
-              onChange={handlePageSizeChange}
-              className="items-per-page-select"
-            >
-              <option value="10">10개씩 보기</option>
-              <option value="20">20개씩 보기</option>
-              <option value="50">50개씩 보기</option>
-              <option value="100">100개씩 보기</option>
-            </select>
-          </div>
-          <div className="data-info">
-            총 {getFilteredData().length}개  {(currentPage - 1) * itemsPerPage + 1}-
-            {Math.min(currentPage * itemsPerPage, getFilteredData().length)}개 표시
-          </div>
-        </div>
-        <table 
-          className="user-data-table"
-          role="grid"
-          aria-label="환자 목록"
-        >
-          <thead>
-            <tr>
-              <th style={{ width: '40px', textAlign: 'center' }}>
-                <input
-                  type="checkbox"
-                  checked={isAllChecked}
-                  ref={(el) => {
-                    if (el) el.indeterminate = isIndeterminate;
-                  }}
-                  onChange={toggleAllCheckboxes}
-                  style={{ cursor: 'pointer' }}
-                />
-              </th>
-              <th>측정일시</th>
-              <th>이름</th>
-              <th>주민번호</th>
-              <th>성별</th>
-              <th>성격</th>
-              <th>스트레스</th>
-              <th>노동강도</th>
-              <th>신장(cm)</th>
-              <th>체중(kg)</th>
-              <th>BMI</th>
-              <th>맥박</th>
-              <th>수축기혈압</th>
-              <th>이완기혈압</th>
-              <th>a-b(ms)</th>
-              <th>a-c(ms)</th>
-              <th>a-d(ms)</th>
-              <th>a-e(ms)</th>
-              <th>b/a</th>
-              <th>c/a</th>
-              <th>d/a</th>
-              <th>e/a</th>
-              <th>PVC</th>
-              <th>BV</th>
-              <th>SV</th>
-              <th>HR</th>
-              <th>증상</th>
-              <th>복용약물</th>
-              <th>기호식</th>
-              <th>메모</th>
-            </tr>
-          </thead>
-          <tbody>
-            {getFilteredData()
-              .slice(visibleRange.start, visibleRange.end)
-              .map((user, index) => (
-                <tr key={user._id || `row-${index}`} role="row">
-                  <td style={{ textAlign: 'center' }}>
+
+      {/* 데이터 테이블 */}
+      <div className="data-table">
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th className="col-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={isAllChecked}
+                    ref={ref => {
+                      if (ref) ref.indeterminate = isIndeterminate;
+                    }}
+                    onChange={toggleAllCheckboxes}
+                  />
+                </th>
+                <th className="col-date">측정일시</th>
+                <th className="col-name">이름</th>
+                <th className="col-resident">주민번호</th>
+                <th className="col-gender">성별</th>
+                <th className="col-personality">성격</th>
+                <th className="col-stress">스트레스</th>
+                <th className="col-workIntensity">노동강도</th>
+                <th className="col-number" data-type="number">신장(cm)</th>
+                <th className="col-number" data-type="number">체중(kg)</th>
+                <th className="col-number" data-type="number">BMI</th>
+                <th className="col-number" data-type="number">맥박</th>
+                <th className="col-number" data-type="number">수축기혈압</th>
+                <th className="col-number" data-type="number">이완기혈압</th>
+                <th className="col-ratio" data-type="number">a-b(ms)</th>
+                <th className="col-ratio" data-type="number">a-c(ms)</th>
+                <th className="col-ratio" data-type="number">a-d(ms)</th>
+                <th className="col-ratio" data-type="number">a-e(ms)</th>
+                <th className="col-ratio" data-type="number">b/a</th>
+                <th className="col-ratio" data-type="number">c/a</th>
+                <th className="col-ratio" data-type="number">d/a</th>
+                <th className="col-ratio" data-type="number">e/a</th>
+                <th className="col-number" data-type="number">PVC</th>
+                <th className="col-number" data-type="number">BV</th>
+                <th className="col-number" data-type="number">SV</th>
+                <th className="col-number" data-type="number">HR</th>
+                <th className="col-symptoms">증상</th>
+                <th className="col-medications">복용약물</th>
+                <th className="col-preferences">기호식품</th>
+                <th className="col-memo">메모</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentPageData.map(user => (
+                <tr key={user._id}>
+                  <td className="col-checkbox">
                     <input
                       type="checkbox"
                       checked={checkedIds.includes(user._id)}
                       onChange={() => handleCheckboxChange(user._id)}
-                      style={{ 
-                        width: '18px', 
-                        height: '18px',
-                        cursor: 'pointer'
-                      }}
                     />
                   </td>
-                  <td>{formatDate(user.createdAt)}</td>
-                  <td>{user.name}</td>
-                  <td>{user.residentNumber}</td>
-                  <td>{user.gender}</td>
-                  <td>{user.personality}</td>
-                  <td>{user.stress}</td>
-                  <td>{user.workIntensity}</td>
-                  <td>{user.height}</td>
-                  <td>{user.weight}</td>
-                  <td>{user.bmi}</td>
-                  <td>{user.pulse}</td>
-                  <td>{user.systolicBP}</td>
-                  <td>{user.diastolicBP}</td>
-                  <td>{user.ab_ms}</td>
-                  <td>{user.ac_ms}</td>
-                  <td>{user.ad_ms}</td>
-                  <td>{user.ae_ms}</td>
-                  <td>{user.ba_ratio}</td>
-                  <td>{user.ca_ratio}</td>
-                  <td>{user.da_ratio}</td>
-                  <td>{user.ea_ratio}</td>
-                  <td>{user.pvc}</td>
-                  <td>{user.bv}</td>
-                  <td>{user.sv}</td>
-                  <td>{user.hr}</td>
-                  <td>{Array.isArray(user.symptoms) ? user.symptoms.join(', ') : user.symptoms}</td>
-                  <td>{user.medication}</td>
-                  <td>{user.preference}</td>
-                  <td>{user.memo}</td>
+                  <td className="col-date">{formatDate(user.createdAt)}</td>
+                  <td className="col-name">{user.name}</td>
+                  <td className="col-resident">{user.residentNumber}</td>
+                  <td className="col-gender">{user.gender}</td>
+                  <td className="col-personality">{user.personality}</td>
+                  <td className="col-stress">{user.stress}</td>
+                  <td className="col-workIntensity">{user.workIntensity}</td>
+                  <td className="col-number" data-type="number">{user.height}</td>
+                  <td className="col-number" data-type="number">{user.weight}</td>
+                  <td className="col-number" data-type="number">{calculateBMI(user.height, user.weight)}</td>
+                  <td className="col-number" data-type="number">{user.pulse}</td>
+                  <td className="col-number" data-type="number">{user.systolicBP}</td>
+                  <td className="col-number" data-type="number">{user.diastolicBP}</td>
+                  <td className="col-ratio" data-type="number">{user.ab_ms}</td>
+                  <td className="col-ratio" data-type="number">{user.ac_ms}</td>
+                  <td className="col-ratio" data-type="number">{user.ad_ms}</td>
+                  <td className="col-ratio" data-type="number">{user.ae_ms}</td>
+                  <td className="col-ratio" data-type="number">{user.ba_ratio}</td>
+                  <td className="col-ratio" data-type="number">{user.ca_ratio}</td>
+                  <td className="col-ratio" data-type="number">{user.da_ratio}</td>
+                  <td className="col-ratio" data-type="number">{user.ea_ratio}</td>
+                  <td className="col-number" data-type="number">{user.pvc}</td>
+                  <td className="col-number" data-type="number">{user.bv}</td>
+                  <td className="col-number" data-type="number">{user.sv}</td>
+                  <td className="col-number" data-type="number">{user.pulse}</td>
+                  <td className="col-symptoms" data-type="text-long">{Array.isArray(user.selectedSymptoms) ? user.selectedSymptoms.join(', ') : user.selectedSymptoms}</td>
+                  <td className="col-medications" data-type="text-long">{Array.isArray(user.selectedMedications) ? user.selectedMedications.join(', ') : user.selectedMedications}</td>
+                  <td className="col-preferences" data-type="text-long">{Array.isArray(user.selectedPreferences) ? user.selectedPreferences.join(', ') : user.selectedPreferences}</td>
+                  <td className="col-memo" data-type="text-long">{user.memo}</td>
                 </tr>
               ))}
-          </tbody>
-        </table>
-        {visibleRange.end < sortedData.length && (
-          <div className="loading-more">
-            <LoadingSpinner message="추가 데이터를 불러오는 중..." />
-          </div>
-        )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 페이지네이션 */}
+        <div className="pagination">
+          <button 
+            onClick={() => handlePageChange(1)}
+            disabled={currentPage === 1}
+            className="pagination-button"
+          >
+            처음
+          </button>
+          <button 
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="pagination-button"
+          >
+            이전
+          </button>
+          
+          {pageNumbers.map(pageNum => (
+            <button
+              key={pageNum}
+              onClick={() => handlePageChange(pageNum)}
+              className={`pagination-button ${currentPage === pageNum ? 'active' : ''}`}
+            >
+              {pageNum}
+            </button>
+          ))}
+          
+          <button 
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="pagination-button"
+          >
+            다음
+          </button>
+          <button 
+            onClick={() => handlePageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            className="pagination-button"
+          >
+            마지막
+          </button>
+        </div>
       </div>
-      {renderEditModal()}
+
+      {/* 모달 컴포넌트들 */}
+      {isEditModalOpen && (
+        <EditModal
+          user={editingUser}
+          onSave={handleSave}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingUser(null);
+          }}
+        />
+      )}
+      
+      {isViewModalOpen && (
+        <ViewModal
+          user={viewingUser}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setViewingUser(null);
+          }}
+        />
+      )}
     </div>
-  
   );
 };
 export default UserDataTable;

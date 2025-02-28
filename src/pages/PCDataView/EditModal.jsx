@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import './EditModal.css';
 
-const EditModal = ({ user, onClose, onSave }) => {
+const EditModal = ({ isOpen, onClose, onSave, data }) => {
+  if (!isOpen) return null;
+
   // 초기 상태를 빈 객체로 설정
   const initialState = {
     name: '',
@@ -32,7 +34,7 @@ const EditModal = ({ user, onClose, onSave }) => {
     medication: '',
     preference: '',
     memo: '',
-    ...user // 기존 사용자 데이터가 있으면 덮어쓰기
+    ...data // 기존 사용자 데이터가 있으면 덮어쓰기
   };
 
   const [editedUser, setEditedUser] = useState(initialState);

@@ -34,4 +34,24 @@
 
 .header-center button:hover {
   background-color: #2980b9;
+}
+
+.mode-toggle {
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: #4a90e2;
+  color: white;
+}
+
+.mode-toggle.kiosk-mode {
+  background-color: #e24a4a;
+}
+
+.mode-toggle:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 } 

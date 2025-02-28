@@ -202,7 +202,7 @@ input[type="number"] {
 .field-label {
   font-size: 1.1rem;         
   font-weight: 900;          /* 가장 진한 굵기로 설정 */
-  color: #000000;           /* 순수 ��정색으로 변경 */
+  color: #000000;           /* 순수 정색으로 변경 */
   margin-bottom: 8px;
   display: block;
   letter-spacing: -0.3px;
@@ -337,4 +337,163 @@ header .header-link:hover {
 
 .file-input::-webkit-file-upload-button:hover {
   background: #1d4ed8;
+}
+
+.content {
+  padding: 20px;
+}
+
+.main-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 20px;
+}
+
+.main-page h1 {
+  color: #333;
+  margin-bottom: 40px;
+}
+
+.mode-toggle {
+  margin-bottom: 30px;
+  display: flex;
+  gap: 10px;
+}
+
+.mode-button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mode-button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.mode-button:hover {
+  background-color: #e9ecef;
+}
+
+.mode-button.active:hover {
+  background-color: #0056b3;
+}
+
+.main-buttons {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.main-button {
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.main-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .main-buttons {
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .mode-toggle {
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+.coming-soon {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 5px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.mode-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-button:disabled:hover {
+  background-color: #f8f9fa;
+}
+
+.mode-toggle-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1000;
+  padding: 10px;
+}
+
+.mode-switch-button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.mode-switch-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.mode-switch-button.active {
+  background-color: #28a745;
+}
+
+@media (max-width: 768px) {
+  .mode-toggle-container {
+    position: static;
+    text-align: center;
+    margin: 10px 0;
+  }
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  margin-top: 64px; /* 헤더 높이만큼 여백 */
+  flex: 1;
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-top: 56px; /* 모바일 헤더 높이 */
+    padding: 1rem;
+  }
 }

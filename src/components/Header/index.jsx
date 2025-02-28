@@ -1,26 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import '../../styles/Header.css';
+import { useNavigate } from 'react-router-dom';
+import './Header.css';
 
 const Header = () => {
+  const navigate = useNavigate();
+
   return (
-    <header className="header">
-      <div className="header-left">
-        <h1>SmartPulse Human</h1>
-      </div>
-      <div className="header-center">
-        <Link to="/">
-          <button>데이터 입력</button>
-        </Link>
-        <Link to="/data">
-          <button>데이터 조회</button>
-        </Link>
-      </div>
-      <div className="header-right">
-        {/* 필요한 경우 우측 요소 추가 */}
-      </div>
-    </header>
+    <div className="header-wrapper">
+      <header className="header">
+        <h1>맥파 측정 시스템</h1>
+        <div className="header-buttons">
+          <button className="nav-button" onClick={() => navigate('/pc-input')}>PC 데이터 입력</button>
+          <button className="nav-button" onClick={() => navigate('/pc-data')}>PC 데이터 조회</button>
+        </div>
+      </header>
+    </div>
   );
 };
 
-export default Header; 
+export default Header;
