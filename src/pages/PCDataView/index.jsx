@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EditModal from './EditModal';
 import { getAllUserInfo, deleteUserInfo, saveUserInfo, initializeLocalStorage } from '../../api/userInfo';
 import './UserDataTable.css';
@@ -10,10 +10,25 @@ import { read, utils } from 'xlsx';
 import * as ExcelJS from 'exceljs';
 import { FaSearch, FaFilter, FaFileExcel, FaEdit, FaTrash } from 'react-icons/fa';
 import './PCDataView.css';
+import {
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
+} from '@mui/material';
 
 // localStorage 키 상수 정의
-const LOCAL_STORAGE_KEY = 'ubioUserData';  // UserInfoForm과 동일한 키 사용
+const LOCAL_STORAGE_KEY = 'pcData';
+
 const UserDataTable = () => {
+  // Ref 추가
+  const headerCheckboxRef = useRef(null);
+
   // 상태 관리
   const [userData, setUserData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,13 +44,10 @@ const UserDataTable = () => {
   // 정렬, 필터링, 페이지네이션 상태
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const [filters, setFilters] = useState({
-    name: '',
-    residentNumber: '',
-    gender: '',
-    birthDate: '',
-    phone: '',
-    address: '',
-    createdAt: ''
+    startDate: '',
+    endDate: '',
+    residentNumberPrefix: '',
+    name: ''
   });
   
   // 페이지네이션 상태
@@ -46,41 +58,47 @@ const UserDataTable = () => {
     end: itemsPerPage
   });
   // loadUserData 함수 선언
-  const loadUserData = useCallback(() => {
+  const loadUserData = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      console.log('테이블 로드시 원본 데이터:', savedData); // 디버깅 로그 추가
+      // localStorage에서 데이터 가져오기
+      const localData = JSON.parse(localStorage.getItem('userData') || '[]');
+      console.log('Local Storage 데이터:', localData);
       
-      if (!savedData) {
-        setUserData([]);
-        return;
+      // MongoDB에서 데이터 가져오기 시도
+      let mongoData = [];
+      try {
+        const response = await getAllUserInfo();
+        mongoData = response;
+        console.log('MongoDB 데이터:', mongoData);
+      } catch (error) {
+        console.error('MongoDB 데이터 로드 실패:', error);
       }
 
-      const parsedData = JSON.parse(savedData);
-      console.log('파싱된 데이터:', parsedData); // 디버깅 로그 추가
+      // 두 데이터 소스 병합
+      const combinedData = [...localData, ...mongoData];
+      console.log('병합된 데이터:', combinedData);
 
-      // 데이터 구조 확인 및 처리
-      let processedData;
-      if (Array.isArray(parsedData)) {
-        processedData = parsedData;
-      } else if (parsedData.data && Array.isArray(parsedData.data)) {
-        processedData = parsedData.data;
-      } else {
-        processedData = [parsedData];
-      }
+      // 중복 제거 (같은 _id를 가진 항목)
+      const uniqueData = Array.from(new Map(
+        combinedData.map(item => [item._id, item])
+      ).values());
 
-      // 데이터 정제 시 필드 확인
-      const cleanData = processedData.filter(item => item && typeof item === 'object').map(item => ({
-        ...item,
-        personality: String(item.personality || ''),
-        stress: String(item.stress || ''),
-        workIntensity: String(item.workIntensity || '')
-      }));
+      // 데이터 정제
+      const cleanData = uniqueData
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({
+          ...item,
+          personality: String(item.personality || ''),
+          stress: String(item.stress || ''),
+          workIntensity: String(item.workIntensity || '')
+        }));
 
-      console.log('최종 처리된 데이터:', cleanData); // 디버깅 로그 추가
+      console.log('최종 처리된 데이터:', cleanData);
       setUserData(cleanData);
     } catch (error) {
       console.error('데이터 로드 오류:', error);
+      setError('데이터를 불러오는 중 오류가 발생했습니다.');
       setUserData([]);
     } finally {
       setIsLoading(false);
@@ -421,17 +439,17 @@ const UserDataTable = () => {
       name: ''
     });
   };
-  const handleDelete = useCallback(async (userId) => {
-    if (window.confirm('정말로 이 데이터를 삭제하시겠습니까?')) {
+  const handleDelete = async (id) => {
+    if (window.confirm('정말 삭제하시겠습니까?')) {
       try {
-        // 삭제 로직 구현
-        // 데이터 새로고침
-        loadUserData();
+        await deleteUserInfo(id);  // 이미 수정된 deleteUserInfo 사용
+        await loadUserData();  // 데이터 다시 로드
       } catch (error) {
-        console.error('삭제 중 오류 발생:', error);
+        console.error('삭제 실패:', error);
+        setError('데이터 삭제 중 오류가 발생했습니다.');
       }
     }
-  }, [loadUserData]);
+  };
   const renderRow = useCallback((user, index) => (
     <tr key={user._id}>
       <td className="checkbox-cell">
@@ -510,28 +528,17 @@ const UserDataTable = () => {
     setCheckedIds([]);
   }, [userData]);
   // EditModal 저장 로직 수정
-  const handleSave = useCallback(async (formData) => {
+  const handleSave = async (userData) => {
     try {
-      // 1. 저장 시도
-      console.log('Saving data:', formData);
-      await saveUserInfo(formData);
-      
-      // 2. 즉시 데이터 새로고침
-      const freshData = await loadUserData();
-      console.log('Fresh data after save:', freshData);
-      
-      // 3. UI 업데이트
+      await saveUserInfo(userData);  // 이미 수정된 saveUserInfo 사용
+      await loadUserData();  // 데이터 다시 로드
       setIsEditModalOpen(false);
       setEditingUser(null);
-      
-      // 4. 성공 메시지
-      alert('저장이 완료되었습니다.');
-      
     } catch (error) {
-      console.error('Save failed:', error);
-      alert('저장 실패: ' + (error.message || '알 수 없는 오류'));
+      console.error('저장 실패:', error);
+      setError('데이터 저장 중 오류가 발생했습니다.');
     }
-  }, [loadUserData]);
+  };
   // 데이터 변경 감지를 위한 useEffect 추가
   useEffect(() => {
     console.log('userData updated:', userData);
@@ -712,209 +719,121 @@ const UserDataTable = () => {
     return <div>Error: {error}</div>;
   }
   return (
-    <div className="data-view-container">
-      {/* 상단 컨트롤 섹션 */}
-      <div className="controls-section">
-        <div className="search-box">
-          <FaSearch className="search-icon" />
-          <input 
-            type="text" 
-            placeholder="이름 또는 주민번호로 검색..."
-            value={filters.name || filters.residentNumberPrefix || ''}
-            onChange={(e) => handleFilterChange('name', e.target.value)}
-          />
+    <div className="user-data-table">
+      <div className="table-controls">
+        <div className="filter-section">
+          {/* 필터 컨트롤 */}
         </div>
-        
-        {/* 선택 삭제 버튼 */}
-        {showDeleteButton && (
-          <button 
-            className="delete-selected-button"
-            onClick={handleDeleteSelected}
-          >
-            <FaTrash /> 선택 항목 삭제 ({checkedIds.length})
-          </button>
-        )}
-
-        <div className="date-filter">
-          <input 
-            type="date" 
-            value={filters.startDate}
-            onChange={(e) => handleFilterChange('startDate', e.target.value)}
+        <div className="action-buttons">
+          <button onClick={handleExport}>엑셀 다운로드</button>
+          <button onClick={handleBackup}>백업</button>
+          <input
+            type="file"
+            accept=".json"
+            onChange={handleRestore}
+            style={{ display: 'none' }}
+            id="restore-input"
           />
-          <span className="date-separator">~</span>
-          <input 
-            type="date" 
-            value={filters.endDate}
-            onChange={(e) => handleFilterChange('endDate', e.target.value)}
-          />
-        </div>
-
-        <button className="filter-reset" onClick={handleResetFilters}>
-          <FaFilter /> 필터 초기화
-        </button>
-        
-        <button className="export-excel" onClick={handleExport}>
-          <FaFileExcel /> Excel 내보내기
-        </button>
-      </div>
-
-      {/* 데이터 테이블 */}
-      <div className="data-table">
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th className="col-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={isAllChecked}
-                    ref={ref => {
-                      if (ref) ref.indeterminate = isIndeterminate;
-                    }}
-                    onChange={toggleAllCheckboxes}
-                  />
-                </th>
-                <th className="col-date">측정일시</th>
-                <th className="col-name">이름</th>
-                <th className="col-resident">주민번호</th>
-                <th className="col-gender">성별</th>
-                <th className="col-personality">성격</th>
-                <th className="col-stress">스트레스</th>
-                <th className="col-workIntensity">노동강도</th>
-                <th className="col-number" data-type="number">신장(cm)</th>
-                <th className="col-number" data-type="number">체중(kg)</th>
-                <th className="col-number" data-type="number">BMI</th>
-                <th className="col-number" data-type="number">맥박</th>
-                <th className="col-number" data-type="number">수축기혈압</th>
-                <th className="col-number" data-type="number">이완기혈압</th>
-                <th className="col-ratio" data-type="number">a-b(ms)</th>
-                <th className="col-ratio" data-type="number">a-c(ms)</th>
-                <th className="col-ratio" data-type="number">a-d(ms)</th>
-                <th className="col-ratio" data-type="number">a-e(ms)</th>
-                <th className="col-ratio" data-type="number">b/a</th>
-                <th className="col-ratio" data-type="number">c/a</th>
-                <th className="col-ratio" data-type="number">d/a</th>
-                <th className="col-ratio" data-type="number">e/a</th>
-                <th className="col-number" data-type="number">PVC</th>
-                <th className="col-number" data-type="number">BV</th>
-                <th className="col-number" data-type="number">SV</th>
-                <th className="col-number" data-type="number">HR</th>
-                <th className="col-symptoms">증상</th>
-                <th className="col-medications">복용약물</th>
-                <th className="col-preferences">기호식품</th>
-                <th className="col-memo">메모</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentPageData.map(user => (
-                <tr key={user._id}>
-                  <td className="col-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={checkedIds.includes(user._id)}
-                      onChange={() => handleCheckboxChange(user._id)}
-                    />
-                  </td>
-                  <td className="col-date">{formatDate(user.createdAt)}</td>
-                  <td className="col-name">{user.name}</td>
-                  <td className="col-resident">{user.residentNumber}</td>
-                  <td className="col-gender">{user.gender}</td>
-                  <td className="col-personality">{user.personality}</td>
-                  <td className="col-stress">{user.stress}</td>
-                  <td className="col-workIntensity">{user.workIntensity}</td>
-                  <td className="col-number" data-type="number">{user.height}</td>
-                  <td className="col-number" data-type="number">{user.weight}</td>
-                  <td className="col-number" data-type="number">{calculateBMI(user.height, user.weight)}</td>
-                  <td className="col-number" data-type="number">{user.pulse}</td>
-                  <td className="col-number" data-type="number">{user.systolicBP}</td>
-                  <td className="col-number" data-type="number">{user.diastolicBP}</td>
-                  <td className="col-ratio" data-type="number">{user.ab_ms}</td>
-                  <td className="col-ratio" data-type="number">{user.ac_ms}</td>
-                  <td className="col-ratio" data-type="number">{user.ad_ms}</td>
-                  <td className="col-ratio" data-type="number">{user.ae_ms}</td>
-                  <td className="col-ratio" data-type="number">{user.ba_ratio}</td>
-                  <td className="col-ratio" data-type="number">{user.ca_ratio}</td>
-                  <td className="col-ratio" data-type="number">{user.da_ratio}</td>
-                  <td className="col-ratio" data-type="number">{user.ea_ratio}</td>
-                  <td className="col-number" data-type="number">{user.pvc}</td>
-                  <td className="col-number" data-type="number">{user.bv}</td>
-                  <td className="col-number" data-type="number">{user.sv}</td>
-                  <td className="col-number" data-type="number">{user.pulse}</td>
-                  <td className="col-symptoms" data-type="text-long">{Array.isArray(user.selectedSymptoms) ? user.selectedSymptoms.join(', ') : user.selectedSymptoms}</td>
-                  <td className="col-medications" data-type="text-long">{Array.isArray(user.selectedMedications) ? user.selectedMedications.join(', ') : user.selectedMedications}</td>
-                  <td className="col-preferences" data-type="text-long">{Array.isArray(user.selectedPreferences) ? user.selectedPreferences.join(', ') : user.selectedPreferences}</td>
-                  <td className="col-memo" data-type="text-long">{user.memo}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* 페이지네이션 */}
-        <div className="pagination">
-          <button 
-            onClick={() => handlePageChange(1)}
-            disabled={currentPage === 1}
-            className="pagination-button"
-          >
-            처음
-          </button>
-          <button 
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="pagination-button"
-          >
-            이전
-          </button>
-          
-          {pageNumbers.map(pageNum => (
-            <button
-              key={pageNum}
-              onClick={() => handlePageChange(pageNum)}
-              className={`pagination-button ${currentPage === pageNum ? 'active' : ''}`}
-            >
-              {pageNum}
+          <label htmlFor="restore-input">
+            <button onClick={() => document.getElementById('restore-input').click()}>
+              복원
             </button>
-          ))}
-          
-          <button 
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="pagination-button"
-          >
-            다음
-          </button>
-          <button 
-            onClick={() => handlePageChange(totalPages)}
-            disabled={currentPage === totalPages}
-            className="pagination-button"
-          >
-            마지막
-          </button>
+          </label>
         </div>
       </div>
 
-      {/* 모달 컴포넌트들 */}
-      {isEditModalOpen && (
-        <EditModal
-          user={editingUser}
-          onSave={handleSave}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setEditingUser(null);
-          }}
-        />
-      )}
-      
-      {isViewModalOpen && (
-        <ViewModal
-          user={viewingUser}
-          onClose={() => {
-            setIsViewModalOpen(false);
-            setViewingUser(null);
-          }}
-        />
-      )}
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={isAllChecked}
+                  ref={headerCheckboxRef}
+                  onChange={toggleAllCheckboxes}
+                  className="custom-checkbox"
+                  id="header-checkbox"
+                />
+                <label htmlFor="header-checkbox"></label>
+              </th>
+              <th onClick={() => handleSort('createdAt')}>
+                측정일시 {renderSortIcon('createdAt')}
+              </th>
+              <th onClick={() => handleSort('name')}>
+                이름 {renderSortIcon('name')}
+              </th>
+              <th>주민번호</th>
+              <th>성별</th>
+              <th>성격</th>
+              <th>스트레스</th>
+              <th>노동강도</th>
+              <th>신장(cm)</th>
+              <th>체중(kg)</th>
+              <th>BMI</th>
+              <th>맥박</th>
+              <th>수축기혈압</th>
+              <th>이완기혈압</th>
+              <th>a-b(ms)</th>
+              <th>a-c(ms)</th>
+              <th>a-d(ms)</th>
+              <th>a-e(ms)</th>
+              <th>b/a</th>
+              <th>c/a</th>
+              <th>d/a</th>
+              <th>e/a</th>
+              <th>PVC</th>
+              <th>BV</th>
+              <th>SV</th>
+              <th>HR</th>
+              <th>증상</th>
+              <th>복용약물</th>
+              <th>기호식품</th>
+              <th>메모</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentPageData.map((user, index) => renderRow(user, index))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="pagination">
+        <button 
+          onClick={() => handlePageChange(1)} 
+          disabled={currentPage === 1}
+        >
+          {'<<'}
+        </button>
+        <button 
+          onClick={() => handlePageChange(currentPage - 1)} 
+          disabled={currentPage === 1}
+        >
+          {'<'}
+        </button>
+        {pageNumbers.map(number => (
+          <button
+            key={number}
+            onClick={() => handlePageChange(number)}
+            className={currentPage === number ? 'active' : ''}
+          >
+            {number}
+          </button>
+        ))}
+        <button 
+          onClick={() => handlePageChange(currentPage + 1)} 
+          disabled={currentPage === totalPages}
+        >
+          {'>'}
+        </button>
+        <button 
+          onClick={() => handlePageChange(totalPages)} 
+          disabled={currentPage === totalPages}
+        >
+          {'>>'}
+        </button>
+      </div>
     </div>
   );
 };

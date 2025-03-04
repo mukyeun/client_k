@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { saveUserInfo, LOCAL_STORAGE_KEY } from '../../App';  // App.js의 saveUserInfo 함수 import
+import { saveUserInfo } from '../../api/userInfo';  // 경로 수정
+import { LOCAL_STORAGE_KEY, USER_DATA_KEY } from '../../constants';
 import ExcelJS from 'exceljs';
 import { 증상카테고리 } from '../../data/symptoms';
 import { 약물카테고리 } from '../../data/medications';
@@ -10,6 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import { 스트레스카테고리, evaluateStressLevel } from '../../data/stressEvents.js';
 import { FaUser } from 'react-icons/fa';
 import './PCDataInput.css';  // PCDataTable.css를 PCDataInput.css로 수정
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { Box, Typography, TextField, FormGroup, FormControlLabel, Checkbox, Button } from '@mui/material';
 
 // Excel 날짜를 JavaScript Date로 변환하는 함수
 const excelDateToJSDate = (excelDate) => {
@@ -117,9 +120,6 @@ const checkDataLoaded = () => {
   return isLoaded;
 };
 
-// 로컬 스토리지 키 상수 정의
-const USER_DATA_KEY = 'ubioUserData';
-
 // 로컬 스토리지 저장 함수
 const saveToLocalStorage = (data) => {
   try {
@@ -179,6 +179,8 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
   const [selectedIds, setSelectedIds] = useState([]);  // 선택된 행의 ID들
   const [stressEvents, setStressEvents] = useState([]);  // 스트레스 평가 항목들
   const [stressScore, setStressScore] = useState(0);    // 스트레스 총점
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // initialValues가 변경될 때 폼 데이터 업데이트
   useEffect(() => {
@@ -403,45 +405,32 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
   // handleSubmit 함수 수정
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    try {
-      setIsLoading(true);
-      
-      // 기본 폼 데이터 검증
-      if (!validateForm()) {
-        throw new Error('필수 입력 항목을 확인해주세요.');
-      }
-      
-      // 맥파 데이터 검증
-      if (!validatePulseData(formData)) {
-        throw new Error('맥파 데이터가 올바르지 않습니다. 다시 가져와주세요.');
-      }
+    if (!validateForm()) {
+      return;
+    }
 
-      const newData = {
-        _id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
+    try {
+      // 맥파 데이터 계산 업데이트
+      const dataToSave = {
         ...formData,
-        pulse: formData.pulse || '0',
-        systolicBP: formData.systolicBP || '0',
-        diastolicBP: formData.diastolicBP || '0'
+        createdAt: new Date().toISOString(),
+        _id: formData._id || Date.now().toString()
       };
 
-      // 로컬 스토리지에 데이터 저장
-      const currentData = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
-      currentData.push(newData);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(currentData));
-
-      console.log('저장된 데이터:', newData);
+      // 직접 saveUserInfo 호출
+      const savedData = await saveUserInfo(dataToSave);
+      console.log('저장된 데이터:', savedData);
+      
+      // 폼 초기화
+      setFormData(initialFormState);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       
       alert('데이터가 성공적으로 저장되었습니다.');
-      resetForm();
-      navigate('/pc-data');
-      
     } catch (error) {
-      console.error('저장 오류:', error);
-      alert(error.message);
-    } finally {
-      setIsLoading(false);
+      console.error('저장 실패:', error);
+      alert('데이터 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -1249,10 +1238,19 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
   };
 
   return (
-    <div className="user-info-container">
-      <div className="form-header">
-        <h2>PC 데이터 입력</h2>
-      </div>
+    <Box>
+      <Typography 
+        variant="h4" 
+        component="h1"
+        sx={{ 
+          mb: 4, 
+          fontWeight: 600,
+          color: 'text.primary',
+          fontSize: { xs: '1.5rem', md: '2rem' }
+        }}
+      >
+        PC 데이터 입력
+      </Typography>
 
       <form className="user-info-form">
         {/* 기본 정보 섹션 */}
@@ -1461,7 +1459,6 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
                       <div className="stress-total">총점: {totalScore}점</div>
                       <div className="stress-level">
                         스트레스 수준: <span className={`level-${evaluation.level}`}>{evaluation.level}</span>
-                        <div className="level-description">({evaluation.description})</div>
                       </div>
                     </>
                   );
@@ -1877,7 +1874,7 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
         </div>
       </form>
 
-      {/* 하단 버튼 컨테이너 추가 */}
+      {/* 하단 버튼 컨테이너 */}
       <div className="bottom-buttons-container">
         <div className="bottom-buttons">
           <button 
@@ -1888,7 +1885,7 @@ const UserInfoForm = ({ onSubmit, initialValues = {}, mode = 'create' }) => {
           </button>
         </div>
       </div>
-    </div>
+    </Box>
   );
 };
 

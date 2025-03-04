@@ -1,0 +1,45 @@
+.dowon-home-container {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.menu-card {
+  height: 100%;
+  transition: transform 0.2s;
+}
+
+.menu-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.home-container {
+  padding: 20px;
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  color: #1a237e;
+  margin-bottom: 1rem;
+}
+
+.feature-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.feature-description {
+  color: #666;
+}
+
+.appointment-button {
+  margin-top: 2rem;
+  padding: 1rem 3rem;
+  font-size: 1.2rem;
+  background-color: #4caf50;
+}
+
+.appointment-button:hover {
+  background-color: #43a047;
+} 

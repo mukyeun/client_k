@@ -1,19 +1,20 @@
 // src/components/common/Toast.jsx
-import React, { useEffect } from 'react';
-import '../../styles/components/Toast.css';
+import React from 'react';
+import { Snackbar, Alert } from '@mui/material';
 
-export const Toast = ({ message, type = 'info', duration = 3000, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, duration);
-
-    return () => clearTimeout(timer);
-  }, [duration, onClose]);
-
+const Toast = ({ open, message, severity, onClose }) => {
   return (
-    <div className={`toast ${type}`}>
-      <span className="toast-message">{message}</span>
-    </div>
+    <Snackbar
+      open={open}
+      autoHideDuration={6000}
+      onClose={onClose}
+      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+    >
+      <Alert onClose={onClose} severity={severity} sx={{ width: '100%' }}>
+        {message}
+      </Alert>
+    </Snackbar>
   );
 };
+
+export default Toast;

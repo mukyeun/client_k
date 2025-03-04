@@ -6,12 +6,37 @@ const { exec } = require('child_process');
 
 let mainWindow;
 
-// uBioMacpa 관련 경로 설정
+// 경로 설정
 const UBIO_INSTALL_PATH = 'C:\\Program Files (x86)\\uBioMacpa Pro';
 const UBIO_DATA_PATH = 'D:\\uBioMacpaData';
 const UBIO_EXE_PATH = path.join(UBIO_INSTALL_PATH, 'bin', 'uBioMacpaPro.exe');
+const DOWON_DATA_PATH = path.join(app.getPath('userData'), 'DowonData');
 
-// 디렉토리 생성 함수
+// 도원한의원 데이터 디렉토리 생성 함수
+function createDowonDirectory() {
+  try {
+    const dirs = [
+      DOWON_DATA_PATH,
+      path.join(DOWON_DATA_PATH, 'appointments'),
+      path.join(DOWON_DATA_PATH, 'patients'),
+      path.join(DOWON_DATA_PATH, 'backups')
+    ];
+
+    dirs.forEach(dir => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`Created Dowon directory: ${dir}`);
+      }
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error creating Dowon directories:', error);
+    return false;
+  }
+}
+
+// uBioMacpa 디렉토리 생성 함수
 function createDataDirectory() {
   try {
     // 메인 디렉토리 생성
@@ -75,19 +100,35 @@ function createWindow() {
   console.log('Loading URL:', startUrl);
   mainWindow.loadURL(startUrl);
 
-  // 개발자 도구 열기
-  mainWindow.webContents.openDevTools();
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('Window loaded successfully');
-    // Electron 환경 체크를 위한 이벤트 발송
     mainWindow.webContents.send('electron-check', true);
   });
 }
 
 app.whenReady().then(() => {
-  console.log('App is ready, creating window...');
+  console.log('App is ready, creating directories and window...');
+  createDowonDirectory();
   createWindow();
+});
+
+// 도원한의원 예약 데이터 처리
+ipcMain.handle('save-appointment', async (event, appointmentData) => {
+  try {
+    const appointmentsPath = path.join(DOWON_DATA_PATH, 'appointments');
+    const fileName = `appointment_${Date.now()}.json`;
+    const filePath = path.join(appointmentsPath, fileName);
+    
+    fs.writeFileSync(filePath, JSON.stringify(appointmentData, null, 2));
+    return { success: true, fileName };
+  } catch (error) {
+    console.error('Save appointment failed:', error);
+    throw error;
+  }
 });
 
 // uBioMacpa 실행 핸들러
@@ -127,6 +168,22 @@ ipcMain.handle('launch-ubio-macpa', async () => {
     return { success: true };
   } catch (error) {
     console.error('Launch failed:', error);
+    throw error;
+  }
+});
+
+// 백업 처리
+ipcMain.handle('create-backup', async () => {
+  try {
+    const backupPath = path.join(DOWON_DATA_PATH, 'backups');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFileName = `backup_${timestamp}.zip`;
+    
+    // TODO: 백업 로직 구현
+    
+    return { success: true, backupFile: backupFileName };
+  } catch (error) {
+    console.error('Backup failed:', error);
     throw error;
   }
 });

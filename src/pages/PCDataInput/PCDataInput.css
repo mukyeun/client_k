@@ -112,3 +112,20 @@ input[type="text"] {
 .ubio-launch-button:active {
   background-color: #3d8b40;
 }
+
+.pc-data-input-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.toast-message {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 16px;
+  border-radius: 4px;
+  z-index: 1000;
+}

@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+// axios 기본 설정 추가
+axios.defaults.baseURL = 'http://localhost:5000';
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
 const USER_DATA_KEY = 'userData';
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:5000/api/users';
+const USE_MONGODB = true;
 
 export const initializeLocalStorage = () => {
   localStorage.removeItem(USER_DATA_KEY);
@@ -9,6 +14,15 @@ export const initializeLocalStorage = () => {
 
 export const saveUserInfo = async (userData) => {
   try {
+    if (USE_MONGODB) {
+      try {
+        const response = await axios.post(API_BASE_URL, userData);
+        userData = response.data;
+      } catch (error) {
+        console.error('MongoDB 저장 실패, localStorage만 사용:', error);
+      }
+    }
+
     const existingData = localStorage.getItem(USER_DATA_KEY);
     console.log('기존 데이터:', existingData);
 
@@ -50,15 +64,25 @@ export const saveUserInfo = async (userData) => {
   }
 };
 
-export const getAllUserInfo = () => {
+export const getAllUserInfo = async () => {
   try {
+    if (USE_MONGODB) {
+      try {
+        const response = await axios.get(API_BASE_URL);
+        localStorage.setItem(USER_DATA_KEY, JSON.stringify(response.data));
+        return response.data;
+      } catch (error) {
+        console.error('MongoDB 조회 실패, localStorage 사용:', error);
+      }
+    }
+
     const data = localStorage.getItem(USER_DATA_KEY);
     if (!data) return [];
     
     const parsedData = JSON.parse(data);
     return Array.isArray(parsedData) ? parsedData : [];
   } catch (error) {
-    console.error('Failed to get user info from localStorage:', error);
+    console.error('Failed to get user info:', error);
     return [];
   }
 };
@@ -108,6 +132,63 @@ export const fetchUserData = async () => {
     return await response.json();
   } catch (error) {
     console.error('API 호출 오류:', error);
+    throw error;
+  }
+};
+
+export const saveUserInfoDB = async (userData) => {
+  try {
+    const response = await axios.post(API_BASE_URL, userData);
+    // localStorage에도 저장
+    const existingData = JSON.parse(localStorage.getItem('ubioUserData') || '[]');
+    existingData.push(response.data);
+    localStorage.setItem('ubioUserData', JSON.stringify(existingData));
+    return response.data;
+  } catch (error) {
+    console.error('DB 데이터 저장 실패:', error);
+    throw error;
+  }
+};
+
+export const getAllUserInfoDB = async () => {
+  try {
+    const response = await axios.get(API_BASE_URL);
+    // localStorage와 동기화
+    localStorage.setItem('ubioUserData', JSON.stringify(response.data));
+    return response.data;
+  } catch (error) {
+    console.error('DB 데이터 조회 실패:', error);
+    // DB 연결 실패시 localStorage 데이터 반환
+    return JSON.parse(localStorage.getItem('ubioUserData') || '[]');
+  }
+};
+
+export const updateUserInfoDB = async (id, userData) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/${id}`, userData);
+    // localStorage 업데이트
+    const existingData = JSON.parse(localStorage.getItem('ubioUserData') || '[]');
+    const updatedData = existingData.map(item => 
+      item._id === id ? response.data : item
+    );
+    localStorage.setItem('ubioUserData', JSON.stringify(updatedData));
+    return response.data;
+  } catch (error) {
+    console.error('DB 데이터 수정 실패:', error);
+    throw error;
+  }
+};
+
+export const deleteUserInfoDB = async (id) => {
+  try {
+    await axios.delete(`${API_BASE_URL}/${id}`);
+    // localStorage에서도 삭제
+    const existingData = JSON.parse(localStorage.getItem('ubioUserData') || '[]');
+    const filteredData = existingData.filter(item => item._id !== id);
+    localStorage.setItem('ubioUserData', JSON.stringify(filteredData));
+    return true;
+  } catch (error) {
+    console.error('DB 데이터 삭제 실패:', error);
     throw error;
   }
 }; 

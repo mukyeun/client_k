@@ -1,12 +1,14 @@
 // src/components/common/ErrorMessage.jsx
 import React from 'react';
-import './ErrorMessage.css';
+import { Alert, Box } from '@mui/material';
 
 const ErrorMessage = ({ message }) => {
   return (
-    <div className="error-message">
-      <p>{message}</p>
-    </div>
+    <Box sx={{ my: 2 }}>
+      <Alert severity="error">
+        {message || '오류가 발생했습니다. 다시 시도해주세요.'}
+      </Alert>
+    </Box>
   );
 };
 

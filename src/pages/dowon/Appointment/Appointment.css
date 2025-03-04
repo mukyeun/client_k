@@ -1,0 +1,44 @@
+.appointment-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.appointment-paper {
+  padding: 24px;
+}
+
+.appointment-title {
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.date-selection {
+  margin-bottom: 24px;
+}
+
+.date-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.time-selection {
+  margin-top: 24px;
+}
+
+.time-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.time-button {
+  min-width: 80px;
+}
+
+.navigation-buttons {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+} 
